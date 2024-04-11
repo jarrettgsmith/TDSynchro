@@ -20,20 +20,50 @@ $config = Get-YamlConfiguration -ConfigFile $configFile
 
 # Extract variables from the configuration
 $computers = $config.computers
+$reposFolder = $config.reposFolder
+$gitProject = $config.gitProject
+$credentialFile = ".\\credential.xml" 
+
+#Get the username
+$username = $env:USERNAME 
 # Remove the current computer from the list of computers
 $computers = $computers | Where-Object { $_ -ne $env:COMPUTERNAME }
 
+# Function to get the credential
+function Get-Credential {
+    if (Test-Path $credentialFile) {
+        # Import the credential from the file
+        $credential = Import-Clixml -Path $credentialFile
+    } else {
+        # Prompt for password securely
+        $password = Read-Host -Prompt "Enter the password for $username" -AsSecureString
+        # Create a new PSCredential object with the provided username and password
+        $credential = New-Object System.Management.Automation.PSCredential($username, $password)
+        # Export the credential to a file for future use
+        $credential | Export-Clixml -Path $credentialFile
+    }
+    return $credential
+}
+
 # Get the credential
-$username = $env:USERNAME 
-Write-Host "Hello $username."
-$password = Read-Host -Prompt "Enter the password for $username" -AsSecureString
-$credential = New-Object System.Management.Automation.PSCredential($username, $password)
+$credential = Get-Credential
 
 # Iterate over each host
 foreach ($computer in $computers) {
+    Write-Host "Connecting to $computer..."
 
-    Invoke-Command -ComputerName $computer -EnableNetworkAccess -ScriptBlock {
-        Write-Host "I am $env:ComputerName"
+    try {
+        # Establish a remote session to the host
+        $session = New-PSSession -ComputerName $computer -Credential $credential -ErrorAction Stop
+
+        Invoke-Command -Session $session -ScriptBlock {
+            param($credential)
+            Write-Host "Successfully connected to: $env:ComputerName"
+        } -ArgumentList $credential
+
+        Remove-PSSession $session
     }
-
+    catch {
+        Write-Host "Connection to $computer failed."
+    }
 }
