@@ -81,27 +81,23 @@ foreach ($computer in $computers) {
         Write-Host "Copying $remoteInstallerPath to $tempPath"
 
         # Copy the installer file to the local temporary path
-        Copy-Item -Path $remoteInstallerPath -Destination $tempPath -Force
+        Copy-Item -Path $remoteInstallerPath -Destination $tempPath -Progress
 
         # Define the installer arguments for silent installation
-        $installerArguments = "SP-", "/VERYSILENT", "/SUPPRESSMSGBOXES"
-        #$installerArguments = "/quiet"
+        #$installerArguments = "/VERYSILENT"
 
         # Execute the installer silently from the local temporary path
         #Start-Process -FilePath $tempPath -ArgumentList $installerArguments -Wait
 
         Write-Host "Installing $tempPath"
 
-        #& $tempPath $installerArguments
-        #& $tempPath /quiet 
-
-        $installerProcess = Start-Process -FilePath $tempPath -ArgumentList $installerArguments -Wait -PassThru
+        $installerProcess = Start-Process -FilePath $tempPath -ArgumentList '/S','/v','/qn' -Wait -PassThru
         $installerProcess.WaitForExit()
         $exitCode = $installerProcess.ExitCode
         Write-Host "Installer exit code: $exitCode"
 
         # Clean up the temporary file
-        #Remove-Item -Path $tempPath
+        Remove-Item -Path $tempPath
     } -ArgumentList $reposFolder, $credential, "TouchDesigner.2023.11600.exe"
 
 

@@ -1,18 +1,8 @@
-#The hostnames of the computers in the cluster. It is important to use hostnames and not 
-#IP addresses as this has Windows security implications.
 computers:
   - Jupiter
   - Mars
   - Polaris
-
-#Option to use a Git repository for managing version updates
-useGit: true
 reposFolder: "\\\\Polaris\\GitRepos"
 gitProject: "C:\\Users\\Public\\Projects\\TDSynchro"
-
-#The username to use for creating credentials. By default the local
-#user is the one that is used.
 username: $env:USERNAME
-
-#The location where the encrypted credential file will be stored
 credentialFile: "$gitProject\\Scripts\\credential.xml"

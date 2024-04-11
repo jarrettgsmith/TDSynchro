@@ -15,17 +15,16 @@ function Get-YamlConfiguration {
 }
 
 # Load configuration from YAML
-$configFile = ".\custom_config.yml"
+$configFile = "..\..\config.yml"
 $config = Get-YamlConfiguration -ConfigFile $configFile
 
 # Extract variables from the configuration
 $computers = $config.computers
 $reposFolder = $config.reposFolder
 $gitProject = $config.gitProject
-$credentialFile = "$gitProject\\Scripts\\credential.xml" 
-
-#Get the username
+$credentialFile = ".\\credential.xml" 
 $username = $env:USERNAME 
+
 # Remove the current computer from the list of computers
 $computers = $computers | Where-Object { $_ -ne $env:COMPUTERNAME }
 
@@ -54,6 +53,7 @@ foreach ($computer in $computers) {
     # Establish a remote session to the host
 
     $session = New-PSSession -ComputerName $computer -Credential $credential
+    $location = Get-Location
         
     $sessionId = Invoke-Command -Session $session -ScriptBlock {
         $output = qwinsta | Select-String "Active"
@@ -68,14 +68,11 @@ foreach ($computer in $computers) {
         
     Invoke-Command -Session $session -ScriptBlock {
         $app = "notepad.exe"
-        $psexecOutput = psexec -accepteula -s \\localhost -i $using:sessionId -d -u "NT AUTHORITY\NETWORK SERVICE" $app 2>&1
-        if ($psexecOutput -match "notepad.exe started on localhost") {
-            Write-Host "Notepad.exe started successfully on $using:computer is session ID $($matches[1])." -ForegroundColor Green
-        } else {
-            Write-Warning "Failed to start Notepad.exe on $using:computer. Output: $psexecOutput"
-        }
+        Set-Location $using:location
+        Get-Location
+        & ../../PSTools/psexec -accepteula -s \\localhost -i $using:sessionId -d -u "NT AUTHORITY\NETWORK SERVICE" $app
     }
 
-    Remove-PSSession $session
+    Remove-PSSession $session 
 
 }

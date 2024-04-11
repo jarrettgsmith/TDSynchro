@@ -14,14 +14,14 @@ function Get-YamlConfiguration {
 }
 
 # Load configuration from YAML
-$configFile = ".\custom_config.yml"
+$configFile = "..\..\config.yml"
 $config = Get-YamlConfiguration -ConfigFile $configFile
 
 # Extract variables from the configuration
 $computers = $config.computers
 $reposFolder = $config.reposFolder
 $gitProject = $config.gitProject
-$credentialFile = "$gitProject\Scripts\credential.xml"
+$credentialFile = ".\\credential.xml" 
 $username = $env:USERNAME
 
 # Remove the current computer from the list of computers
@@ -55,7 +55,7 @@ foreach ($computer in $computers) {
 
     # Kill all processes that start with "TouchDesigner Setup" on the remote computer
     Invoke-Command -Session $session -ScriptBlock {
-        $processes = Get-Process -Name "TouchDesigner*" -ErrorAction SilentlyContinue
+        $processes = Get-Process -Name "Setup/Uninstall*" -ErrorAction SilentlyContinue
         if ($processes) {
             $processes | Stop-Process -Force
             Write-Host "TouchDesigner installer processes killed on $($env:COMPUTERNAME)"

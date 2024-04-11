@@ -14,14 +14,14 @@ function Get-YamlConfiguration {
 }
 
 # Load configuration from YAML
-$configFile = ".\custom_config.yml"
+$configFile = "..\..\config.yml"
 $config = Get-YamlConfiguration -ConfigFile $configFile
 
 # Extract variables from the configuration
 $computers = $config.computers
 $reposFolder = $config.reposFolder
 $gitProject = $config.gitProject
-$credentialFile = "$gitProject\Scripts\credential.xml"
+$credentialFile = ".\\credential.xml"
 $username = $env:USERNAME
 
 # Remove the current computer from the list of computers
