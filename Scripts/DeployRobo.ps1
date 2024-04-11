@@ -52,42 +52,55 @@ function Get-Credential {
 # Get the credential
 $credential = Get-Credential
 
-# Create an array to store the synchronization jobs
-$syncJobs = @()
+# Define the share name and the path to share
+$shareName = "TempSourceShare"
+$localPath = $sourceDir  # The local path you want to share
 
+# Check if the SMB share already exists
+$existingShare = Get-SmbShare -Name $shareName -ErrorAction SilentlyContinue
+
+if ($null -eq $existingShare) {
+    Write-Host "Creating SMB share '$shareName'..."
+    # Create the SMB share
+    New-SmbShare -Name $shareName -Path $localPath -FullAccess everyone
+} else {
+    Write-Host "SMB share '$shareName' already exists."
+}
+
+# Iterate over each host
 foreach ($computer in $computers) {
-    Write-Host "Connecting to $computer..."
+    try{
+        Write-Host "Connecting to $computer..."
+        # Establish a remote session to the host
+        $session = New-PSSession -ComputerName $computer -Credential $credential
 
-    try {
-        # Establish a remote session to the target computer
-        $session = New-PSSession -ComputerName $computer -Credential $credential -ErrorAction Stop
-
-        # Use the source directory as the target directory. No need to change anything.
-        $targetDir = $sourceDir
-
-        # Create the target directory if it doesn't exist
+        # Map the network drive to the shared resources folder
         Invoke-Command -Session $session -ScriptBlock {
-            param($targetDir)
-            $targetParentDir = Split-Path -Parent $targetDir
-            if (-not (Test-Path $targetParentDir)) {
-                New-Item -ItemType Directory -Path $targetParentDir -Force | Out-Null
-            }
-        } -ArgumentList $targetDir
+            param($credential, $sourceHost, $sourceDir, $shareName)
 
-        # Sync the folder structure and contents
-        Write-Host "Syncing folders and files to $computer..."
-        Copy-Item -Path $sourceDir -Destination $targetDir -ToSession $session -Recurse -Force
-        Write-Host "Sync completed for $computer."
+            # Mapping network drive with provided credentials
+            New-PSDrive -Name "Source" `
+                        -PSProvider "FileSystem" `
+                        -Root "\\$sourceHost\$shareName" `
+                        -Credential $credential
+            Write-Host "Mapped network drive to Source."
 
-        # Close the remote session
+            # Constructing source path using UNC naming conventions
+            $sourcePath = "\\$sourceHost\$shareName"
+            Write-Host "Source path set to $sourcePath"
+
+            # Initiating Robocopy to mirror the source directory to the target directory
+            Write-Host "Starting Robocopy operation from Source to Target directory."
+            robocopy $sourcePath $sourceDir /MIR > robocopy_log.txt
+            Write-Host "Robocopy operation completed."
+
+        } -ArgumentList $credential, $env:ComputerName, $sourceDir, $sharename
+
+        
+        # Clean up the remote session
         Remove-PSSession $session
     }
-    catch {
+    catch{
         Write-Host "Connection to $computer failed."
     }
 }
-
-# Wait for all synchronization jobs to complete
-Write-Host "Waiting for all synchronization jobs to complete..."
-$syncJobs | Wait-Job | Receive-Job
-Write-Host "All synchronization jobs completed."

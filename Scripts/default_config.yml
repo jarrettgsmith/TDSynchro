@@ -4,7 +4,7 @@ computers:
   - Jupiter
   - Mars
   - Polaris
-  - Pluto
+  #- Pluto
 
 #The username to use for creating credentials. By default the local
 #user is the one that is used.
