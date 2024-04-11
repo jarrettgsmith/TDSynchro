@@ -10,4 +10,5 @@ computers:
 username: $env:USERNAME
 
 #The location where the encrypted credential file will be stored
-credentialFile: ".\\Scripts\\credential.xml"
+#This location will be relative to the scripts folder
+credentialFile: ".\\credential.xml"
