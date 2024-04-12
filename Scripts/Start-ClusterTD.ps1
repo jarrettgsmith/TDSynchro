@@ -33,6 +33,12 @@ $config, $computers, $username, $credentialFile = Get-Configuration
 . .\Get-Credential.ps1
 $isValidLocalUser, $credential = Get-Credential -username $username -credentialFile $credentialFile
 
+# Get the current script's directory
+$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
+
+# Get the source directory path (two levels up from the script path)
+$sourceDir = Split-Path -Parent (Split-Path -Parent $scriptPath)
+
 # Iterate over each host
 foreach ($computer in $computers) {
     Write-Host "Connecting to $computer..."
@@ -54,9 +60,11 @@ foreach ($computer in $computers) {
         
     Invoke-Command -Session $session -ScriptBlock {
         #$app = "../../../TouchDesigner/bin/TouchDesigner.exe"
-        $app = "C:\Users\dagobah\Documents\Derivative\Projects\SphereSim1\TouchDesigner\bin\TouchDesigner.exe"
+        $appPath = "TouchDesigner\bin\TouchDesigner.exe"
+        $app = "$using:sourceDir\$appPath"
+        Write-Host "Running TouchDesigner from $using:sourceDir"
         Set-Location $using:location
-        & ../../PSTools/psexec -accepteula -s \\localhost -i $using:sessionId -d -u "NT AUTHORITY\NETWORK SERVICE" $app
+        & ../../PSTools/psexec -accepteula -s \\localhost -i $using:sessionId -d -u "NT AUTHORITY\NETWORK SERVICE" $app *> $null
     }
 
     Remove-PSSession $session 
