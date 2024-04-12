@@ -40,34 +40,32 @@ $config, $computers, $username, $credentialFile = Get-Configuration
 . .\Get-Credential.ps1
 $isValidLocalUser, $credential = Get-Credential -username $username -credentialFile $credentialFile
 
-if ($isValidLocalUser){
-    # Iterate over each host
-    foreach ($computer in $computers) {
-        Write-Host "Connecting to $computer..."
+# Iterate over each host
+foreach ($computer in $computers) {
+    Write-Host "Connecting to $computer..."
+    # Establish a remote session to the host
 
-        # Establish a remote session to the host
-        $session = New-PSSession -ComputerName $computer -Credential $credential
-        $location = Get-Location
-            
-        $sessionId = Invoke-Command -Session $session -ScriptBlock {
-            $output = qwinsta | Select-String "Active"
-            if ($output -match "(\d+)\s+Active") {
-                $matches[1]
-            } else {
-                Write-Warning "No active session found."
-            }
+    $session = New-PSSession -ComputerName $computer -Credential $credential
+    $location = Get-Location
+        
+    $sessionId = Invoke-Command -Session $session -ScriptBlock {
+        $output = qwinsta | Select-String "Active"
+        if ($output -match "(\d+)\s+Active") {
+            $matches[1]
+        } else {
+            Write-Warning "No active session found."
         }
-
-        Write-Host "Session ID: $sessionId"
-            
-        Invoke-Command -Session $session -ScriptBlock {
-            $app = "notepad.exe"
-            Set-Location $using:location
-            Get-Location
-            & ../../PSTools/psexec -accepteula -s \\localhost -i $using:sessionId -d -u "NT AUTHORITY\NETWORK SERVICE" $app
-        }
-
-        Remove-PSSession $session 
-
     }
+
+    Write-Host "Session ID: $sessionId"
+        
+    Invoke-Command -Session $session -ScriptBlock {
+        #$app = "../../../TouchDesigner/bin/TouchDesigner.exe"
+        $app = "C:\Users\dagobah\Documents\Derivative\Projects\SphereSim1\TouchDesigner\bin\TouchDesigner.exe"
+        Set-Location $using:location
+        & ../../PSTools/psexec -accepteula -s \\localhost -i $using:sessionId -d -u "NT AUTHORITY\NETWORK SERVICE" $app
+    }
+
+    Remove-PSSession $session 
+
 }

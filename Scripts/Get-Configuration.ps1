@@ -32,31 +32,28 @@
  *	stays the same, otherwise changes won't be backwards compatible
 #> 
 
-#Get the configuration objects
-. .\Get-Configuration.ps1
-$config, $computers, $username, $credentialFile = Get-Configuration
+function Get-Configuration{
 
-#Get the credentials
-. .\Get-Credential.ps1
-$isValidLocalUser, $credential = Get-Credential -username $username -credentialFile $credentialFile -Force
+    $configFile = "..\..\config.yml"
 
-#Check the hosts if valid credentials
-if ($isValidLocalUser){
-    Write-Host "Credentials are valid for $username and they have been stored." -ForegroundColor Green
-    # Iterate over each host
-    foreach ($computer in $computers) {
-        Write-Host "Connecting to $computer..."
-        try {
-            $session = New-PSSession -ComputerName $computer -Credential $credential -ErrorAction Stop
-            Invoke-Command -Session $session -ScriptBlock {
-                param($credential)
-                Write-Host "Successfully connected to: $env:ComputerName"
-            } -ArgumentList $credential
-            Remove-PSSession $session
-        }
-        catch {
-            Write-Host "Connection to $computer failed."
-        }
+    if (Test-Path $ConfigFile) {
+        $config = Get-Content $ConfigFile -Raw | ConvertFrom-Yaml
     }
+    else {
+        Write-Warning "Custom configuration file not found. Using default configuration."
+        $config = Get-Content ".\default_config.yml" -Raw | ConvertFrom-Yaml
+    }
+
+    # Extract variables from the configuration
+    $computers = $config.computers
+    $credentialFile = $config.credentialFile
+
+    # Get the username
+    $username = $env:USERNAME
+
+    # Remove the current computer from the list of computers
+    $computers = $computers | Where-Object { $_ -ne $env:COMPUTERNAME }
+
+    return $config, $computers, $username, $credentialFile
 }
 

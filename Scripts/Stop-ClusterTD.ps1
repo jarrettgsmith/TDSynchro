@@ -40,34 +40,23 @@ $config, $computers, $username, $credentialFile = Get-Configuration
 . .\Get-Credential.ps1
 $isValidLocalUser, $credential = Get-Credential -username $username -credentialFile $credentialFile
 
-if ($isValidLocalUser){
-    # Iterate over each host
-    foreach ($computer in $computers) {
-        Write-Host "Connecting to $computer..."
+# Iterate over each host
+foreach ($computer in $computers) {
+    Write-Host "Connecting to $computer..."
+    # Establish a remote session to the host
+    $session = New-PSSession -ComputerName $computer -Credential $credential
 
-        # Establish a remote session to the host
-        $session = New-PSSession -ComputerName $computer -Credential $credential
-        $location = Get-Location
-            
-        $sessionId = Invoke-Command -Session $session -ScriptBlock {
-            $output = qwinsta | Select-String "Active"
-            if ($output -match "(\d+)\s+Active") {
-                $matches[1]
-            } else {
-                Write-Warning "No active session found."
-            }
+    # Kill all TouchDesigner processes on the remote computer
+    Invoke-Command -Session $session -ScriptBlock {
+        $processes = Get-Process -Name "TouchDesigner" -ErrorAction SilentlyContinue
+        if ($processes) {
+            $processes | Stop-Process -Force
+            Write-Host "TouchDesigner processes killed on $($env:COMPUTERNAME)"
         }
-
-        Write-Host "Session ID: $sessionId"
-            
-        Invoke-Command -Session $session -ScriptBlock {
-            $app = "notepad.exe"
-            Set-Location $using:location
-            Get-Location
-            & ../../PSTools/psexec -accepteula -s \\localhost -i $using:sessionId -d -u "NT AUTHORITY\NETWORK SERVICE" $app
+        else {
+            Write-Host "No TouchDesigner processes found on $($env:COMPUTERNAME)"
         }
-
-        Remove-PSSession $session 
-
     }
+
+    Remove-PSSession $session
 }
