@@ -46,6 +46,14 @@ if ($null -eq $installerFile) {
 # Full path to the installer
 $fullInstallerPath = $installerFile.FullName
 
+# Create a firewall rule for new TouchDesigner
+New-NetFirewallRule -DisplayName "TouchDesigner TDSynchro Extraction" `
+                    -Direction Inbound `
+                    -Action Allow `
+                    -Profile Any `
+                    -Program ($InstallDir + "\bin\TouchDesigner.exe") `
+                    -Description "Allow inbound traffic for TouchDesigner"
+
 # Check if the TouchDesigner directory already exists
 if (Test-Path -Path $InstallDir) {
     # Remove the existing TouchDesigner directory and its contents
@@ -64,4 +72,3 @@ Write-Host "The prompt will return when extraction is complete."
 
 # Execute the installation command using Start-Process
 Start-Process -FilePath "$fullInstallerPath" -ArgumentList $installArgs -Wait -NoNewWindow
-

@@ -92,3 +92,8 @@ foreach ($computer in $computers) {
         Write-Host "Connection to $computer failed."
     }
 }
+
+# Remove the SMB share
+Remove-SmbShare -Name $shareName -Force
+
+Write-Host "SMB share '$shareName' has been removed."
