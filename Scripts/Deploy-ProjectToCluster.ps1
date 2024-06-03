@@ -80,6 +80,9 @@ foreach ($computer in $computers) {
             # Initiating Robocopy to mirror the source directory to the target directory
             Write-Host "Starting Robocopy operation from Source to Target directory."
             robocopy $sourcePath $sourceDir /MIR > robocopy_log.txt
+
+			Remove-PSDrive -Name "Source"
+
             Write-Host "Robocopy operation completed."
 
         } -ArgumentList $credential, $env:ComputerName, $sourceDir, $sharename
